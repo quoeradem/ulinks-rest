@@ -1,0 +1,10 @@
+{
+    "siteurl": "https://example.tld/",
+    
+    "mysql": {
+        "socket"    : "",
+        "username"  : "",
+        "password"  : "",
+        "database"  : ""
+    }
+}

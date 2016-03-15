@@ -1,0 +1,17 @@
+{
+    "name"          : "ulinks-rest",
+    "version"       : "1.0.0",
+    "description"   : "A simple RESTful API for link shortening.",
+    "author"        : "Trevor Kulhanek",
+    "license"       : "MIT",
+    "main"          : "ulinks-rest.js",
+    "dependencies"  : {
+        "base62"        : "^1.1.0",
+        "body-parser"   : "^1.15.0",
+        "express"       : "^4.13.4",
+        "moment"        : "^2.11.2",
+        "mysql"         : "^2.10.2",
+        "normalize-url" : "^1.4.1",
+        "validator"     : "^5.1.0"
+    }
+}
