@@ -4,7 +4,7 @@
     "description"   : "A simple RESTful API for link shortening.",
     "author"        : "Trevor Kulhanek",
     "license"       : "MIT",
-    "main"          : "ulinks-rest.js",
+    "main"          : "server.js",
     "dependencies"  : {
         "base62"        : "^1.1.0",
         "body-parser"   : "^1.15.0",
