@@ -2,7 +2,7 @@ var base62       = require('base62');
 var bodyParser   = require('body-parser');
 var express      = require('express');
 var moment       = require('moment');
-var mysql        = require('mysql');
+var mysql        = require('promise-mysql');
 var normalizeUrl = require('normalize-url');
 var validator    = require('validator');
 
@@ -10,13 +10,13 @@ var config       = require('./config.json');
 var port         = process.env.port || 8080;
 
 /* initialize mysql connection */
-var conn = mysql.createConnection({
+var pool = mysql.createPool({
     socketPath : config['mysql']['socket'],
     user       : config['mysql']['username'],
     password   : config['mysql']['password'],
-    database   : config['mysql']['database']
+    database   : config['mysql']['database'],
+    connectionLimit: 100
 });
-conn.connect();
 
 /* setup routes */
 var router = express.Router();
@@ -30,18 +30,21 @@ router.route('/')
             res.status(400).send("Not a valid short URL m8"); 
 
         var id = base62.decode(param);
-        conn.query("SELECT longurl, status FROM urls WHERE id = ?", [id], function(err, result) {
-            if(err) res.status(500).send("Something went wrong...");
-            if (result.length > 0) {
+        pool.getConnection().then(function(conn) {
+            conn.query("SELECT longurl, status FROM urls WHERE id = ?", [id]).then(function(rows) {
+                conn.release;
                 res.json({
                     "kind": "urlshortener#url",
                     "id": config["siteurl"] + param,
-                    "longUrl": result[0].longurl,
-                    "status":  result[0].status,
+                    "longUrl": rows[0].longurl,
+                    "status":  rows[0].status,
                 });
-            } else {
+            }).catch(function(err) {
+                conn.release;
                 res.status(404).send("D.N.E");
-            }
+            });
+        }).catch(function(err) {
+            res.status(500).send("Something went wrong...");
         });
     }) /* End GET */
     .post(function(req, res) {
@@ -58,25 +61,21 @@ router.route('/')
         }
         else {
             longurl = normalizeUrl(longurl);
-            conn.query("SELECT id FROM urls WHERE longurl = ?", [longurl], function(err, result) {
-                if(err) res.status(500).send("Something went wrong...");                
-                if(!result.length && !err) {
-                    conn.query("INSERT INTO urls (longurl, created) VALUES (?, ?)", [longurl, time], function(err, result) {
-                        if(err) res.status(500).send("Something went wrong...");
-                        res.json({
-                            "kind": "urlshortener#url",
-                            "id": config["siteurl"] + base62.encode(result.insertId),
-                            "longUrl": longurl
-                        });
-                    });
-                }
-                else {
+            pool.getConnection().then(function(conn) {
+                conn.query("SELECT id FROM urls WHERE longurl = ?", [longurl]).then(function(rows) {
+                    return rows.length ? rows : conn.query("INSERT INTO urls (longurl, created) VALUES (?, ?)", [longurl, time]);
+                }).then(function(rows) {
+                    conn.release;
+                    var id = rows.length ? rows[0].id : rows.insertId;
                     res.json({
                         "kind": "urlshortener#url",
-                        "id": config["siteurl"] + base62.encode(result[0].id),
+                        "id": config["siteurl"] + base62.encode(id),
                         "longUrl": longurl
                     });
-                }
+                });
+            }).catch(function(err) {
+                conn.release;
+                res.status(500).send("Something went wrong...");
             });
         }
     }) /* End POST */
@@ -95,27 +94,27 @@ router.route('/')
         res.setHeader('Access-Control-Allow-Methods', 'PUT');
         res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
         
-        conn.query("UPDATE urls SET clicks = clicks + 1 WHERE id = ?", [id], function(err, result) {
-            if(err) res.status(500).send("Something went wrong...");
-            if(result.changedRows > 0) {        
-                conn.query("SELECT longurl,status FROM urls WHERE id = ?", [id], function(err, result) {
-                    if(err) res.status(500).send("Something went wrong...");
-                    if (result.length > 0) {
-                        if(result[0].status === 'OK') {
-                            res.json({
-                                "kind": "urlshortener#url",
-                                "id": realId,
-                                "longUrl": result[0].longurl,
-                                "status":  "OK",
-                            });
-                        } else {
-                            res.status(404).send("D.N.E");
-                        } 
-                    }
-                });
-            } else {
-                res.status(404).send("D.N.E");    
-            }
+        pool.getConnection().then(function(conn) {
+            conn.query("UPDATE urls SET clicks = clicks + 1 WHERE id = ?", [id]).then(function(rows) {
+                return conn.query("SELECT longurl,status FROM urls WHERE id = ?", [id]);
+            }).then(function(rows) {
+                conn.release;
+                if(rows[0].status === 'OK') {
+                    res.json({
+                        "kind": "urlshortener#url",
+                        "id": realId,
+                        "longUrl": rows[0].longurl,
+                        "status":  "OK",
+                    });
+                } else {
+                    res.status(404).send("Looks like a bad URL :/");
+                }
+            }).catch(function(err) {
+                conn.release;
+                res.status(404).send("D.N.E");
+            });
+        }).catch(function(err) {
+            res.status(500).send("Something went wrong...");
         });
     }) /* End PUT */
 
