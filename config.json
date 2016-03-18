@@ -1,10 +1,11 @@
 {
     "siteurl": "https://example.tld/",
-    
+    "port": 8080,
     "mysql": {
-        "socket"    : "",
-        "username"  : "",
-        "password"  : "",
-        "database"  : ""
+        "socketPath"      : "",
+        "user"            : "",
+        "password"        : "",
+        "database"        : "",
+        "connectionLimit" : 100
     }
 }

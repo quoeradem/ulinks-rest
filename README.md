@@ -29,9 +29,10 @@ CREATE TABLE IF NOT EXISTS urls (
 The configuration options are all set in the `config.json` file.
 
 * __siteurl__: The URL for the frontend (_ex: https://example.tld/_).
-* __mysql__: MySQL connection options
+* __port__: The port to run the server on.
+* __mysql__: MySQL connection options.
 
-	(_note: I am using a socket to connect to MySQL but you can alternatively define a __host__ and __port__ to be used instead of a __socket__. You will also have to change the connection options in `ulinks-rest.js` as well. You can read more about the `node-mysql` options [here](https://github.com/felixge/node-mysql)_)
+	(_note: I am using a socket to connect to MySQL but you can alternatively define a __host__ and __port__ to be used instead of the __socketPath__. You can read more about the `node-mysql` options [here](https://github.com/felixge/node-mysql)_)
 
 ### Usage
 ---
@@ -47,7 +48,6 @@ GET https://yourdomain.tld/urlshortener/url?shortUrl=https://yourfrontend.tld/ba
 ```
 
 A successful response will look like:
-
 ```
 "kind": "urlshortener#url",
 "id": "https://yourfrontend.tld/ba5e",
@@ -56,7 +56,6 @@ A successful response will look like:
 ```
 
 _Note: This method will not increment the click stats of the requested URL._
-
 
 **Shorten a long URL**
 
@@ -70,7 +69,6 @@ Content-Type: application/json
 ```
 
 A successful response will look like:
-
 ```
 "kind": "urlshortener#url",
 "id": "https://yourfrontend.tld/ba5e",
@@ -82,7 +80,6 @@ A successful response will look like:
 **Note: This method is intended to be used only by a frontend application.**
 
 This method is essentially the same as the above GET method to expand a short URL but will increment the click stats. A frontend can then use the response to redirect to the long URL. For example, to redirect to the target of `https://yourfrontend.tld/1A`, a frontend could send the following request:
-
 ```
 PUT https://yourdomain.tld/urlshortener/url
 Content-Type: application/json
@@ -91,7 +88,6 @@ Content-Type: application/json
 ```
 
 A successful response will look like:
-
 ```
 {
 "kind": "urlshortener#url",
@@ -104,7 +100,6 @@ The frontend can then redirect to the _longUrl_ from the response.
 
 ### License
 ---
-
 **ulinks-rest** is licensed under The MIT License (MIT). A copy of this license has been included in `LICENSE`.
 
 Copyright &copy; 2016 Trevor Kulhanek
